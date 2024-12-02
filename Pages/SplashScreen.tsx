@@ -35,9 +35,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: wp('40%'),
+    width: wp('25%'),
     height: hp('25%'),
-    resizeMode: 'cover',
+    // resizeMode: 'contain',
   },
   title: {
     fontSize: wp('6%'),

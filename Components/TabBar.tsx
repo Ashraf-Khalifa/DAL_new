@@ -1,7 +1,8 @@
 import React from 'react';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { View, Image, TouchableOpacity, StyleSheet } from 'react-native';
-import HomeScreen from '../Pages/HomeScreen';
+import HomeStackNavigator from './HomeStackNavigator';
+import ContactUs from '../Pages/ContactUs';
 import SearchScreen from '../Pages/SearchScreen';
 import AddViolationScreen from '../Pages/AddViolationScreen';
 import AdminStackNavigator from './AdminStackNavigator';
@@ -11,11 +12,12 @@ import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-nat
 
 const Tab = createBottomTabNavigator();
 
-const icons = {
+const icons = { 
   Settings: require('../Images/settings.png'),
   Home: require('../Images/home.png'),
   Profile: require('../Images/user.png'),
   SearchScreen: require('../Images/search-date.png'),
+  ContactUs: require('../Images/customer-service.png'),
   AddViolation: require('../Images/add.png'),
   Admin: require('../Images/admin.png'),
 };
@@ -83,9 +85,11 @@ const MyTabs = ({ route }) => {
       }}
     >
       <Tab.Screen name="Settings" component={SettingsStackNavigator} />
-      <Tab.Screen name="SearchScreen" component={SearchScreen} />
-      <Tab.Screen name="Home" component={HomeScreen} />
+      {/* <Tab.Screen name="SearchScreen" component={SearchScreen} /> */}
+      <Tab.Screen name="ContactUs" component={ContactUs} />
+      <Tab.Screen name="Home" component={HomeStackNavigator} />
       <Tab.Screen name="AddViolation" component={AddViolationScreen} />
+     
       {/* {(user.role === 'admin' || user.role === 'superadmin') && (
         
       )} */}

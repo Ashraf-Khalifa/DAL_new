@@ -72,10 +72,10 @@ const SearchScreen = ({ navigation }) => {
   const [polylineName, setPolylineName] = useState('');
 
   const [region, setRegion] = useState({
-    latitude: 31.9539,
-    longitude: 35.9106,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
+    latitude: 26.2172,
+    longitude: 50.1971,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,    
   });
   const [filters, setFilters] = useState({
     all: true,
@@ -490,7 +490,7 @@ const SearchScreen = ({ navigation }) => {
   return (
     <ScrollView style={styles.container}>
       <TouchableOpacity style={styles.logoContainer} onPress={() => setShowForm(true)}>
-        <Image source={require('../Images/logo.png')} style={styles.logo} />
+        <Image source={require('../Images/logo1.png')} style={styles.logo} />
       </TouchableOpacity>
       <View style={styles.header}>
         <TouchableOpacity style={styles.filterButtonContainer} onPress={() => setFilterModalVisible(true)}>
@@ -1143,9 +1143,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: wp('40%'),
+    width: wp('25%'),
     height: hp('25%'),
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   radioButtonContainer: {
     marginTop: wp('4%'),

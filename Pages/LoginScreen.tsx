@@ -48,7 +48,9 @@ const LoginScreen: React.FC = () => {
             value={email}
             onChangeText={setEmail}
           />
-                    <View style={styles.passwordContainer}>
+          <View style={styles.passwordContainer}>
+           
+   
             <TextInput
               style={styles.passwordInput}
               placeholder="Password"
@@ -57,7 +59,7 @@ const LoginScreen: React.FC = () => {
               value={password}
               onChangeText={setPassword}
             />
-            <TouchableOpacity
+                     <TouchableOpacity
               style={styles.eyeIconContainer}
               onPress={() => setPasswordVisible(!passwordVisible)}
             >
@@ -91,9 +93,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: wp('40%'),
+    width: wp('25%'),
     height: hp('25%'),
-    resizeMode: 'cover',
+    // resizeMode: 'contain',
   },
   formContainer: {
     width: wp('80%'),
@@ -123,6 +125,7 @@ const styles = StyleSheet.create({
     borderColor: '#CCCCCC',
     borderRadius: wp('2%'),
     marginBottom: hp('2%'),
+    justifyContent: 'space-between',
   },
   passwordInput: {
     flex: 1,

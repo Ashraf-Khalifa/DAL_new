@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, Image, StyleSheet, ScrollView,
 import { widthPercentageToDP as wp, heightPercentageToDP as hp } from 'react-native-responsive-screen';
 import MapView, { Marker, Callout, PROVIDER_APPLE } from 'react-native-maps';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 
 const icons = [
   require('../Images/red-flag.png'),
@@ -16,11 +17,13 @@ const icons = [
   require('../Images/sign.png'),
 ];
 
+
 const AddViolationScreen = () => {
   const [filteredPlaces, setFilteredPlaces] = useState([]);
   const [savedPlaces, setSavedPlaces] = useState([]);
   const [placeName, setPlaceName] = useState('');
-  const [showTraffic, setShowTraffic] = useState(true); // Enable traffic by default
+  const [placeDescription, setPlaceDescription] = useState('');
+  const [showTraffic, setShowTraffic] = useState(true); // Enable traffic by default setPlaceDescription
   const [selectedIcon, setSelectedIcon] = useState(null);
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [modalVisibleIcon, setModalVisibleIcon] = useState(false);
@@ -30,18 +33,92 @@ const AddViolationScreen = () => {
   const [fromPeriod, setFromPeriod] = useState('AM');
   const [toTime, setToTime] = useState('');
   const [toPeriod, setToPeriod] = useState('AM');
-  
+  const [imageName, setImageName] = useState('');
+  const [categoryPopupVisible, setCategoryPopupVisible] = useState(false);  
   const [popupVisible, setPopupVisible] = useState(false);
   const [popupContent, setPopupContent] = useState('');
   
   const [region, setRegion] = useState({
-    latitude: 31.9539,
-    longitude: 35.9106,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
+    latitude: 25.276987, // Doha's latitude
+    longitude: 51.520008, // Doha's longitude
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
   });
   
+  const handleCategoryChange = (text) => {
+    setPlaceName(text);
+    const lowerCaseText = text.toLowerCase();
+  
+    // Check if the input matches one of the categories
+    const categories = ['evzones', 'fnbzones', 'violation', 'freeparking', 'mobilityhub', 'taxistands', 'dropoffpickup'];
+    const isCategory = categories.includes(lowerCaseText);
+  
+    if (isCategory) {
+      setPopupContent(`Category: ${text}`); // Set the content to display the category
+      setCategoryPopupVisible(true); // Open the modal
+    } else {
+      setCategoryPopupVisible(false); // Close the modal if the input doesn't match
+    }
+  };
+  
 
+  
+  const handleImagePicker = () => {
+    const options = {
+      mediaType: 'photo',
+      includeBase64: false,
+      maxHeight: 200,
+      maxWidth: 200,
+    };
+  
+    Alert.alert(
+      'Upload Image',
+      'Choose an option',
+      [
+        {
+          text: 'Camera',
+          onPress: () => {
+            launchCamera(options, (response) => {
+              if (response.didCancel) {
+                console.log('User cancelled camera picker');
+              } else if (response.errorCode) {
+                console.log('Camera Error: ', response.errorMessage);
+              } else {
+                const imageUri = response.assets[0].uri;
+                const imageFileName = response.assets[0].fileName || imageUri.split('/').pop(); // Get image name
+                setImageName(imageFileName); // Update state with image name
+                console.log('Camera Image: ', imageUri);
+              }
+            });
+          },
+        },
+        {
+          text: 'Gallery',
+          onPress: () => {
+            launchImageLibrary(options, (response) => {
+              if (response.didCancel) {
+                console.log('User cancelled gallery picker');
+              } else if (response.errorCode) {
+                console.log('Gallery Error: ', response.errorMessage);
+              } else {
+                const imageUri = response.assets[0].uri;
+                const imageFileName = response.assets[0].fileName || imageUri.split('/').pop(); // Get image name
+                setImageName(imageFileName); // Update state with image name
+                console.log('Gallery Image: ', imageUri);
+              }
+            });
+          },
+        },
+        {
+          text: 'Cancel',
+          style: 'cancel',
+        },
+      ],
+      { cancelable: true }
+    );
+  };
+  
+  
   useEffect(() => {
     const loadSavedPlaces = async () => {
       try {
@@ -65,41 +142,55 @@ const AddViolationScreen = () => {
   };
 
   const handleSaveLocation = async () => {
-    if (!validateTime(fromTime) || !validateTime(toTime)) {
-      Alert.alert('Please enter valid "From" and "To" times in HH:MM format.');
+    if (!selectedLocation) {
+      Alert.alert('Error', 'Please select a location on the map.');
+      return;
+    }
+  
+    if (!placeName.trim()) {
+      Alert.alert('Error', 'Please enter a Category.');
+      return;
+    }
+    if (!placeDescription.trim()) {
+      Alert.alert('Error', 'Please enter a description.');
+      return;
+    }
+  
+    if (!imageName) {
+      Alert.alert('Error', 'Please upload an image.');
       return;
     }
   
     const user = await AsyncStorage.getItem('loggedInUser');
     const parsedUser = JSON.parse(user);
   
-    if (selectedLocation && placeName && selectedIcon !== null && fromTime && toTime) {
-      const newPlace = {
-        name: placeName,
-        location: selectedLocation,
-        iconIndex: selectedIcon,
-        fromTime: `${fromTime} ${fromPeriod}`,
-        toTime: `${toTime} ${toPeriod}`,
-        hideFromMap: parsedUser.email === 'user1@dal.com' && parsedUser.password === 'passuser1',
-      };
-      const updatedPlaces = [...savedPlaces, newPlace];
-      setSavedPlaces(updatedPlaces);
-      setFilteredPlaces(updatedPlaces); // Update filteredPlaces immediately
-      setPlaceName('');
-      setSelectedLocation(null);
-      setSelectedIcon(null);
-      setFromTime('');
-      setToTime('');
-      try {
-        await AsyncStorage.setItem('savedPlaces', JSON.stringify(updatedPlaces));
-        Alert.alert('Violation saved successfully');
-      } catch (error) {
-        console.error('Failed to save the location', error);
-      }
-    } else {
-      Alert.alert('Please select a location, enter a name, choose an icon, and enter time details.');
+    const newPlace = {
+      name: placeName,
+      Description: placeDescription,
+      location: selectedLocation,
+      iconIndex: selectedIcon,
+      imageName: imageName, // Save the image name placeDescription
+      hideFromMap: parsedUser?.email === 'user1@dal.com' && parsedUser?.password === 'passuser1',
+    };
+  
+    const updatedPlaces = [...savedPlaces, newPlace];
+    setSavedPlaces(updatedPlaces);
+    setFilteredPlaces(updatedPlaces);
+    setPlaceName('');
+    setPlaceDescription('');
+    setSelectedLocation(null);
+    setImageName('');
+    setSelectedIcon(null);
+  
+    try {
+      await AsyncStorage.setItem('savedPlaces', JSON.stringify(updatedPlaces));
+      Alert.alert('Success', 'Report sent successfully.');
+    } catch (error) {
+      console.error('Failed to save the location', error);
+      Alert.alert('Error', 'Failed to save the violation.');
     }
   };
+  
   
   
   
@@ -170,7 +261,7 @@ const AddViolationScreen = () => {
       <View style={styles.logoContainer}>
         <Image source={require('../Images/logo.png')} style={styles.logo} />
       </View>
-      <Text style={styles.title}>Add Violation</Text>
+      <Text style={styles.title}>Report Problem</Text>
       <View style={styles.mapContainer}>
       <MapView
   style={styles.map}
@@ -249,25 +340,98 @@ const AddViolationScreen = () => {
             </View> */}
       </View>
       <View style={styles.row}>
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Name</Text>
-          <TextInput
-            style={styles.input}
-            value={placeName}
-            onChangeText={setPlaceName}
-            placeholder="Enter place name"
-            placeholderTextColor="#AAAAAA"
-          />
-        </View>
-        <View style={styles.uploadContainer}>
-          <Text style={styles.label}>Upload Image</Text>
-          <TouchableOpacity style={styles.uploadButton} onPress={() => setModalVisibleIcon(true)}>
-            <Text style={styles.uploadText}>Browse</Text>
-            <Image source={require('../Images/upload.png')} style={styles.uploadIcon} />
+      <View style={styles.inputContainer}>
+  <Text style={styles.label}>Category</Text>
+  <TouchableOpacity
+    style={[styles.input, styles.touchableInput]} // Added specific style for TouchableOpacity to avoid styling issues
+    onPress={() => {
+      setPopupContent(placeName || "No category selected"); // Set the popup content
+      setCategoryPopupVisible(true); // Open the modal
+    }}
+  >
+    <Text style={placeName ? styles.inputText : styles.placeholderText}>
+      {placeName || "Enter place Category"} {/* Display placeholder or selected category */}
+    </Text>
+  </TouchableOpacity>
+</View>
+
+
+
+<Modal
+  transparent={true}
+  animationType="fade"
+  visible={categoryPopupVisible}
+  onRequestClose={() => setCategoryPopupVisible(false)}
+>
+  <View style={styles.popupContainer1}>
+    <View style={styles.popup1}>
+      <Text style={styles.customAlertTitle1}>Select a Category</Text>
+      <FlatList
+        data={['evzones', 'fnbzones', 'violation', 'freeparking', 'mobilityhub', 'taxistands', 'dropoffpickup']}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.categoryItem}
+            onPress={() => {
+              setPlaceName(item); // Set the selected category
+              setCategoryPopupVisible(false); // Close the modal
+            }}
+          >
+            <Text style={styles.categoryText}>{item}</Text>
           </TouchableOpacity>
-        </View>
+        )}
+      />
+      <TouchableOpacity
+        style={styles.closeButton1}
+        onPress={() => setCategoryPopupVisible(false)}
+      >
+        <Text style={styles.closeButtonText1}>Cancel</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
+
+
+
+
+<View style={styles.inputContainer}>
+  <Text style={styles.label}>Description</Text>
+  <TextInput
+    style={styles.inputArea}
+    value={placeDescription}
+    onChangeText={setPlaceDescription}
+    placeholder="Add description"
+    placeholderTextColor="#AAAAAA"
+    multiline={true}
+    numberOfLines={4} // Adjust the height of the input area
+  />
+</View>
+
+<View style={styles.uploadContainer}>
+  <Text style={styles.label}>Upload Image</Text>
+  <TouchableOpacity style={styles.uploadButton} onPress={handleImagePicker}>
+    <View style={styles.Browse}>
+    <Text style={styles.uploadText}>Browse</Text>
+    <Image source={require('../Images/upload.png')} style={styles.uploadIcon} />
+    </View>
+    {imageName ? (
+  <Text style={styles.imageNameText}>
+    Selected Image: {imageName.length > 14 ? `${imageName.substring(0, 14)}...` : imageName}
+  </Text>
+) : (
+  <Text style={styles.placeholderText}>
+    Please upload an image.
+  </Text>
+)}
+
+
+  </TouchableOpacity>
+  
+</View>
+
       </View>
-      <Text style={styles.label}>Time</Text>
+      {/* <Text style={styles.label}>Time</Text>
       <View style={styles.timePickersRow}>
   <View style={styles.timePickerContainer}>
     <TextInput
@@ -317,16 +481,16 @@ const AddViolationScreen = () => {
       </TouchableOpacity>
     </View>
   </View>
-</View>
+</View> */}
 
 
       <View style={styles.buttonRow}>
         <TouchableOpacity style={styles.addButton} onPress={handleSaveLocation} >
-          <Text style={styles.addButtonText}>Add</Text>
+          <Text style={styles.addButtonText}>Add Violation</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.deleteButton} onPress={() => setModalVisibleLocations(true)}>
+        {/* <TouchableOpacity style={styles.deleteButton} onPress={() => setModalVisibleLocations(true)}>
           <Text style={styles.deleteButtonText}>Delete</Text>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
       </View>
       <Modal
         visible={modalVisibleIcon}
@@ -398,9 +562,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: wp('40%'),
+    width: wp('25%'),
     height: hp('25%'),
-    resizeMode: 'cover',
   },
   title: {
     fontSize: wp('4%'),
@@ -484,8 +647,8 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: 'col',
+    alignItems: 'start',
     justifyContent: 'space-between',
     marginVertical: hp('1%'),
   },
@@ -497,6 +660,17 @@ const styles = StyleSheet.create({
     color: '#000000',
     marginBottom: hp('2%'),  // Add marginBottom to space label and input
   },
+  inputArea: {
+    padding: wp('3%'),
+    borderWidth: 1,
+    borderColor: '#CCCCCC',
+    borderRadius: wp('2%'),
+    fontSize: wp('3%'),
+    color: '#000000',
+    textAlignVertical: 'top', // Ensures text starts at the top
+    height: hp('10%'), // Adjust height as needed
+  },
+  
   uploadContainer: {
     marginVertical: hp('1%'),  
   },
@@ -507,6 +681,13 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#CCCCCC',
     borderRadius: wp('2%'),
+    justifyContent: 'space-between',
+  },
+  Browse: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 5,
     justifyContent: 'center',
   },
   uploadText: {
@@ -565,7 +746,7 @@ const styles = StyleSheet.create({
   },
   buttonRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    justifyContent: 'center',
     alignItems: 'center',
     marginBottom: hp('15%'),
 
@@ -574,7 +755,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#12587B',
     alignItems: 'center',
     paddingVertical: hp('2%'),
-    width: wp('30%'),
+    width: wp('50%'),
     borderRadius: wp('5%'),
     marginTop: hp('3%'),
   },
@@ -682,7 +863,65 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: hp('2%'),
   },
+  imageNameText: {
+    marginTop: 10,
+    marginBottom: 5,
+    fontSize: wp('3%'),
+    color: '#000',
+  },
+  placeholderText: {
+    marginTop: 10,
+    marginBottom: 5,
+    fontSize: wp('3%'),
+    color: '#AAAAAA', // Placeholder text color
+  },
+  popupContainer1: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+  },
+  popup1: {
+    width: wp('80%'),
+    backgroundColor: 'white',
+    padding: 20,
+    borderRadius: 10,
+  },
+  customAlertTitle1: {
+    fontSize: wp('4%'),
+    fontWeight: 'bold',
+    marginBottom: wp('2%'),
+    color: '#000',
+    alignItems: 'center',
+    alignSelf: 'center',
+  },
+  closeButton1: {
+    alignItems: 'center',
+    alignSelf: 'center',
+    paddingVertical: hp('2%'),
+    width: wp('40%'),
+    borderRadius: wp('3%'),
+    marginTop: hp('4%'),
+    marginBottom: hp('2%'),
+    backgroundColor: '#12587B',
+  },
+  closeButtonText1: {
+    color: '#fff',
+    fontSize: wp('3%'),
+    fontWeight: 'bold',
+    
+  },
   
+  categoryItem: {
+    padding: wp('1.5%'),
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+  },
+  categoryText: {
+    fontSize: wp('3%'),
+    color: '#000',
+    
+  },
   
 });
 

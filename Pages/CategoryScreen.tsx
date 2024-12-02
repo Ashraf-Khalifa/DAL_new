@@ -54,7 +54,7 @@ const CategoryScreen = () => {
     
     <View style={styles.container}>
       <View style={styles.logoContainer}>
-        <Image source={require('../Images/logo.png')} style={styles.logo} />
+        <Image source={require('../Images/logo1.png')} style={styles.logo} />
       </View>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
@@ -146,9 +146,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: wp('40%'),
+    width: wp('25%'),
     height: hp('25%'),
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   headerRow: {
     flexDirection: 'row',

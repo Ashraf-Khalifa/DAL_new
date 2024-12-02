@@ -19,18 +19,20 @@ const RegisterScreen: React.FC = () => {
           <TextInput style={styles.input} placeholder="Username" placeholderTextColor="#AAAAAA" />
           <TextInput style={styles.input} placeholder="Email" placeholderTextColor="#AAAAAA" keyboardType="email-address" />
           <View style={styles.passwordContainer}>
+       
             <TextInput
               style={styles.passwordInput}
               placeholder="Password"
               placeholderTextColor="#AAAAAA"
               secureTextEntry={!passwordVisible}
             />
-            <TouchableOpacity
+    <TouchableOpacity
               style={styles.eyeIconContainer}
               onPress={() => setPasswordVisible(!passwordVisible)}
             >
               <Image source={require('../Images/eye.png')} style={styles.eyeIcon} />
             </TouchableOpacity>
+
           </View>
           <TouchableOpacity style={styles.button} >
             <Text style={styles.buttonText}>Sign Up</Text>
@@ -57,9 +59,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: wp('40%'),
+    width: wp('25%'),
     height: hp('25%'),
-    resizeMode: 'cover',
+    // resizeMode: 'contain',
   },
   formContainer: {
     width: wp('80%'),

@@ -30,16 +30,19 @@ const icons = [
 ];
 
 const categories = [
-  { label: 'MOBILITY HUB', value: 'mobilityHub' },
-  { label: 'Free Parking', value: 'freeParking' },
-  { label: 'Violation', value: 'Violation' },
-  { label: 'F&B Zones', value: 'fnbZones' },
-  { label: 'Taxi Stands', value: 'taxiStands' },
-  { label: 'Drop off/ Pickup points', value: 'dropOffPickup' },
-  { label: 'evZones', value: 'evZones' },
-];
+    { label: 'MOBILITY HUB', value: 'mobilityHub', iconIndex: 13 }, // Example: Bicycle icon
+    { label: 'Free Parking', value: 'freeParking', iconIndex: 0 },
+    { label: 'Violation', value: 'Violation', iconIndex: 1 },
+    { label: 'F&B Zones', value: 'fnbZones', iconIndex: 15 },
+    { label: 'Taxi Stands', value: 'taxiStands', iconIndex: 11 },
+    { label: 'Drop off/ Pickup points', value: 'dropOffPickup', iconIndex: 12 },
+    { label: 'evZones', value: 'evZones', iconIndex: 3 },
+  ];
+  
 
-const HomeScreen = ({ navigation}) => {
+
+
+const ManageYourArea = ({ navigation}) => {
  
   const [isDrawing, setIsDrawing] = useState('green');
   const [drawColor, setDrawColor] = useState('green');
@@ -99,8 +102,13 @@ const HomeScreen = ({ navigation}) => {
   const [alertTitle, setAlertTitle] = useState('');
   const [alertMessage, setAlertMessage] = useState('');
   const [showFullReport, setShowFullReport] = useState(false);
+  const [defaultIcons, setDefaultIcons] = useState([]);
+  const [allowedDays, setAllowedDays] = useState([]);
+  const [daySelectionModalVisible, setDaySelectionModalVisible] = useState(false);
+  const [statusModalVisible, setStatusModalVisible] = useState(false);
 
 
+  
   const calculateZoomLevel = (latitudeDelta) => {
     if (latitudeDelta < 0.01) return 16;  // Very zoomed in
     if (latitudeDelta < 0.05) return 14;  // Moderately zoomed in
@@ -124,9 +132,10 @@ const HomeScreen = ({ navigation}) => {
   };
   
   
-  const showCustomAlert = (title, message) => {
+  const showCustomAlert = (title, message, date) => {
+    const dateMessage = date ? `\n\nDate Added: ${date}` : '';
     setAlertTitle(title);
-    setAlertMessage(message);
+    setAlertMessage(`${message}${dateMessage}`);
     setAlertVisible(true);
   };
   
@@ -407,6 +416,11 @@ const HomeScreen = ({ navigation}) => {
 
 
   const handleSaveLocation = async () => {
+    const today = new Date().toLocaleString('en-us', { weekday: 'long' });
+//   if (!allowedDays.includes(today)) {
+//     alert(`You can only add locations on: ${allowedDays.join(', ')}`);
+//     return;
+//   }
     if (!loggedInUser) {
       alert('No logged-in user found. Please log in and try again.');
       return;
@@ -420,6 +434,7 @@ const HomeScreen = ({ navigation}) => {
           location: selectedLocation,
           iconIndex: selectedIcon,
           category: selectedCategory.value,
+          dateAdded: new Date().toLocaleString(),
         };
         const updatedPlaces = [...savedPlaces, newPlace];
         setSavedPlaces(updatedPlaces);
@@ -659,192 +674,1018 @@ const HomeScreen = ({ navigation}) => {
   const handleContactUs = () => {
     navigation.navigate('ContactUs'); 
   };
+
   return (
-    <View style={styles.mainContainer}>
-      <ScrollView contentContainerStyle={styles.scrollContainer} style={styles.scrollView}>
-        <View style={styles.container}>
-        <TouchableOpacity 
-  style={styles.logoContainer} 
+<View>
+<View >
+<View >
+
+<ScrollView contentContainerStyle={styles.modalScrollContent}>
+  
+
+<View style={styles.headerContainer}>
+  <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+    <Image source={require('../Images/back.png')} style={styles.backIcon} />
+  
+  </TouchableOpacity>
+  <Text style={styles.modalTitle}>Enter Location Details</Text>
+</View>
+
+
+<View style={styles.status}>
+  <TouchableOpacity onPress={() => setStatusModalVisible(true)}>
+    <Image source={require('../Images/status.png')} style={styles.icon} />
+  </TouchableOpacity>
+</View>
+
+<Modal
+  visible={statusModalVisible}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setStatusModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Saved Locations</Text>
+      <FlatList
+        data={savedPlaces}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <View style={styles.savedPlaceItem}>
+            <Text style={styles.Place}>
+              {item.name ||
+                (item.start && item.end
+                  ? `${item.start.latitude.toFixed(2)}, ${item.start.longitude.toFixed(2)} to ${item.end.latitude.toFixed(2)}, ${item.end.longitude.toFixed(2)}`
+                  : 'Unnamed Location')}
+            </Text>
+            {item.dateAdded && (
+              <Text style={styles.dateText}>Added on: {item.dateAdded}</Text>
+            )}
+          </View>
+        )}
+      />
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => setStatusModalVisible(false)}
+      >
+        <Text style={styles.closeButtonText}>Close</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
+
+<View style={styles.radioButtonContainer}>
+<TouchableOpacity
+style={styles.radioButton}
+onPress={() => {
+setSelectedMode('none');
+setMode('none');
+setPopupVisible(false);
+setIsDrawing(false);
+}}
+>
+<View style={[
+styles.radioCircle,
+selectedMode === 'none' && styles.selectedRadioCircle
+]}/>
+<Text style={styles.radioText}>None</Text>
+</TouchableOpacity>
+<TouchableOpacity
+  style={styles.radioButton}
   onPress={() => {
-    if (loggedInUser && ['user1@dal.com', 'user2@dal.com', 'user3@dal.com', 'user4@dal.com', 'user5@dal.com'].includes(loggedInUser.email)) {
-      setShowForm(true);
-    } else {
-    }
+    setSelectedMode('marker');
+    setMode('marker');
+    setPopupVisible(false);
+    setIsDrawing(false);
+    // Automatically set the form to visible since the icon is already selected
+    setShowForm(true);
   }}
 >
-  <Image source={require('../Images/logo.png')} style={styles.logo} />
+  <View style={[
+    styles.radioCircle,
+    selectedMode === 'marker' && styles.selectedRadioCircle
+  ]}/>
+  <Text style={styles.radioText}>Drop</Text>
 </TouchableOpacity>
 
 
-          <View style={styles.header}>
-          {loggedInUser && !['user1@dal.com', 'user2@dal.com', 'user3@dal.com', 'user4@dal.com', 'user5@dal.com'].includes(loggedInUser.email) && (
-          <TouchableOpacity style={styles.signalButton} onPress={() => setModalVisible(true)}>
-        <Image source={require('../Images/status.png')} style={styles.icon} />
-      </TouchableOpacity>
-)}
-      <StatusModal 
-  modalVisible={modalVisible} 
-  setModalVisible={setModalVisible} 
-  navigation={navigation} 
-  loggedInUser={loggedInUser} 
-  setShowForm={setShowForm} 
-/>
-
-            <TouchableOpacity style={styles.settingsButton} onPress={() => setFilterModalVisible(true)}>
-              <Image source={require('../Images/filter.png')} style={styles.icon} />
+<Modal
+  visible={modalVisibleIcon}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setModalVisibleIcon(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      <View style={styles.modalIcon}>
+        <Text style={styles.modalTitle}>Select an Icon</Text>
+        <FlatList
+          data={icons}
+          numColumns={3}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item, index }) => (
+            <TouchableOpacity onPress={() => { setSelectedIcon(index); setModalVisibleIcon(false); setShowForm(true); }}>
+              <Image source={item} style={styles.iconOption} />
             </TouchableOpacity>
-          </View>
-          {loggedInUser && ['user1@dal.com', 'user2@dal.com', 'user3@dal.com', 'user4@dal.com', 'user5@dal.com'].includes(loggedInUser.email) && (
-          <View style={styles.contentContainer}>
-        <TouchableOpacity
-          style={styles.button1}
-          onPress={() => handleReportProblem('Report Problem')}>
-          <Text style={styles.buttonText1}>Report Problem</Text>
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={styles.button1}
-          onPress={() => handleContactUs('Contact Us')}>
-          <Text style={styles.buttonText1}>Contact Us</Text>
-        </TouchableOpacity>
+          )}
+        />
       </View>
-)}
+      <TouchableOpacity style={styles.closeButton} onPress={() => { setModalVisibleIcon(false); setShowForm(true); }}>
+        <Text style={styles.closeButtonText}>Close</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+<TouchableOpacity
+style={styles.radioButton}
+onPress={() => {
+setSelectedMode('polyline');
+setMode('polyline');
+setLineStyleModalVisible(true);
+setIsDrawing(false);
+}}
+>
+<View style={[
+styles.radioCircle,
+selectedMode === 'polyline' && styles.selectedRadioCircle
+]}/>
+<Text style={styles.radioText}>Line</Text>
+</TouchableOpacity>
 
-{loggedInUser && ['admin@dal.com', 'superadmin@dal.com'].includes(loggedInUser.email) && (
-  <View style={styles.contentContainer}>
-    <TouchableOpacity style={styles.button} onPress={() => navigation.navigate('FullAnalysisReport')}>
-      <Text style={styles.buttonText}>VIEW THE FULL ANALYSIS REPORT</Text>
-      <Image source={require('../Images/report.png')} style={styles.buttonIcon} />
-    </TouchableOpacity>
-    <TouchableOpacity 
-      style={styles.button}
-      onPress={() => navigation.navigate('ManageYourArea')}
+<TouchableOpacity
+style={styles.radioButton}
+onPress={() => {
+setSelectedMode('area');  // Enable drawing mode for areas
+setMode('area');          // Set mode to 'area'
+setIsDrawing(true);       // Automatically enable drawing
+}}
+>
+<View style={[
+styles.radioCircle,
+selectedMode === 'area' && styles.selectedRadioCircle // Ensure the circle highlights when Area is selected
+]}/>
+<Text style={styles.radioText}>Area</Text>
+</TouchableOpacity>
+
+
+
+</View>
+
+
+
+  {/* <Modal
+visible={lineStyleModalVisible}
+transparent={true}
+animationType="slide"
+onRequestClose={() => setLineStyleModalVisible(false)}
+>
+<View style={styles.modalOverlay}>
+<View style={styles.modalContent}>
+<Text style={styles.modalTitle}>Select Line Style</Text>
+
+<View style={styles.lineStyleContainer}>
+
+<TouchableOpacity
+style={styles.radioButton2}
+onPress={() => {
+setLineStyle('dashedRed');
+setLineStyleModalVisible(false);  // Hide the modal after selection
+handleSaveLocation();  // Save immediately
+}}
+>
+<View style={[
+styles.radioCircle,
+lineStyle === 'dashedRed' && styles.selectedRadioCircle
+]}/>
+<Text style={styles.radioText}>Dashed Red</Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+style={styles.radioButton2}
+onPress={() => {
+setLineStyle('dashedGreen');
+setLineStyleModalVisible(false);
+handleSaveLocation();
+}}
+>
+<View style={[
+styles.radioCircle,
+lineStyle === 'dashedGreen' && styles.selectedRadioCircle
+]}/>
+<Text style={styles.radioText}>Dashed Green</Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+style={styles.radioButton2}
+onPress={() => {
+setLineStyle('straightRed');
+setLineStyleModalVisible(false);
+handleSaveLocation();
+}}
+>
+<View style={[
+styles.radioCircle,
+lineStyle === 'straightRed' && styles.selectedRadioCircle
+]}/>
+<Text style={styles.radioText}>Straight Red</Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+style={styles.radioButton2}
+onPress={() => {
+setLineStyle('straightGreen');
+setLineStyleModalVisible(false);
+handleSaveLocation();
+}}
+>
+<View style={[
+styles.radioCircle,
+lineStyle === 'straightGreen' && styles.selectedRadioCircle
+]}/>
+<Text style={styles.radioText}>Straight Green</Text>
+</TouchableOpacity>
+</View>
+
+
+<TouchableOpacity
+  style={styles.closeButton}
+  onPress={() => setLineStyleModalVisible(false)}
+>
+  <Text style={styles.closeButtonText}>Close</Text>
+</TouchableOpacity>
+</View>
+</View>
+</Modal> */}
+
+
+
+
+{areaPopupVisible && (
+<Modal
+visible={areaPopupVisible}
+transparent={true}
+animationType="slide"
+onRequestClose={() => setAreaPopupVisible(false)}
+>
+<View style={styles.modalOverlay}>
+<View style={styles.modalContent}>
+  <Text style={styles.modalTitle}>Select Area Style</Text>
+  <View style={styles.lineStyleContainer}>
+    <TouchableOpacity
+      style={styles.radioButton}
+      onPress={() => {
+        setIsDrawing(true); // Ensure drawing mode is enabled
+        setDrawColor('green'); // Set the drawing color to green
+      }}
     >
-      <Text style={styles.buttonText}>MANAGE YOUR AREA</Text>
-      <Image source={require('../Images/manage.png')} style={styles.buttonIcon} />
+      <View style={[
+        styles.radioCircle,
+        isDrawing && drawColor === 'green' && styles.selectedRadioCircle
+      ]}/>
+      <Text style={styles.radioText}>Draw Green</Text>
     </TouchableOpacity>
-    <TouchableOpacity style={styles.button}  onPress={() => navigation.navigate('ViolationsScreen')}>
-      <Text style={styles.buttonText}>CHECK VIOLATIONS</Text>
-      <Image source={require('../Images/violations.png')} style={styles.buttonIcon} />
+    <TouchableOpacity
+      style={styles.radioButton}
+      onPress={() => {
+        setIsDrawing(true); // Ensure drawing mode is enabled
+        setDrawColor('red'); // Set the drawing color to red
+      }}
+    >
+      <View style={[
+        styles.radioCircle,
+        isDrawing && drawColor === 'red' && styles.selectedRadioCircle
+      ]}/>
+      <Text style={styles.radioText}>Draw Red</Text>
     </TouchableOpacity>
   </View>
+
+  <TouchableOpacity
+    style={styles.closeButton}
+    onPress={() => setAreaPopupVisible(false)}
+  >
+    <Text style={styles.closeButtonText}>Close</Text>
+  </TouchableOpacity>
+</View>
+</View>
+</Modal>
 )}
 
 
-          {/* <View style={styles.containerSearch}>
-            <View style={styles.searchContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="Search City"
-                placeholderTextColor="#AAAAAA"
-                value={searchCity}
-                onChangeText={setSearchCity}
-              />
-              <TouchableOpacity style={styles.searchButton} onPress={handleSearchCity}>
-                <Image source={require('../Images/search.png')} style={styles.searchIcon} />
-              </TouchableOpacity>
-            </View>
-            <View style={styles.searchContainer}>
-              <TextInput
-                style={styles.breadcrumbText}
-                placeholder="Search Activity"
-                placeholderTextColor="#AAAAAA"
-                value={searchActivity}
-                onChangeText={setSearchActivity}
-              />
-              <TouchableOpacity style={styles.searchButton}>
-                <Image source={require('../Images/search.png')} style={styles.searchIcon} />
-              </TouchableOpacity>
-            </View>
 
 
-          </View> */}
-          <View style={styles.mapContainer}>
-          <MapView
-  key={JSON.stringify(filteredPlaces)}
-  style={styles.map}
-  region={region}
-  onRegionChangeComplete={setRegion}
-  onPress={(event) => {
-    if (isDrawing) {
-      handleDrawStart(event);
-    } else {
-      handleSelectLocation(event);
-    }
-  }}
-  onLongPress={handleDrawEnd}
-  showsCompass={true}
-  showsPointsOfInterest={true}
-  showsBuildings={true}
-  showsIndoors={true}
-  showsUserLocation={true}
-  followsUserLocation={true}
-  showsMyLocationButton={true}
-  showsScale={true}
-  showsZoomControls={true}
-  onUserLocationChange={(event) => {
-    const { coordinate } = event.nativeEvent;
-    if (coordinate) {
-      const { latitude, longitude } = coordinate;
-      setRegion({
-        latitude,
-        longitude,
-        latitudeDelta: 0.0922,
-        longitudeDelta: 0.0421,
-      });
-    }
+
+
+
+<View style={styles.containerSearch}>
+{selectedMode !== 'polyline' && selectedMode !== 'area' && (
+<TextInput
+style={styles.placeContainer}
+placeholder="Enter drop name"
+placeholderTextColor="#AAAAAA"
+value={placeName}
+onChangeText={setPlaceName}
+/>
+)}
+{selectedMode === 'polyline' && (
+<TextInput
+style={styles.placeContainer}
+placeholder="Enter line name"
+placeholderTextColor="#AAAAAA"
+value={polylineName}
+onChangeText={setPolylineName}
+/>
+)}
+{selectedMode === 'area' && (
+<TextInput
+style={styles.placeContainer}
+placeholder="Enter area name"
+placeholderTextColor="#AAAAAA"
+value={polygonName}
+onChangeText={setPolygonName}
+/>
+)}
+<TouchableOpacity
+  style={styles.placeContainer} // Use same style as TextInput
+  onPress={() => setDaySelectionModalVisible(true)}
+>
+  <Text
+    style={[
+      styles.selectedDaysText,
+      allowedDays.length === 0 && styles.placeholderTextColor, // Apply placeholder color if no days selected
+    ]}
+  >
+    {allowedDays.length === 7
+      ? 'Always' 
+      : allowedDays.length > 0
+      ? allowedDays.join(', ') 
+      : 'Select Allowed Days'} 
+  </Text>
+</TouchableOpacity>
+
+
+
+</View>
+
+
+  
+  {/* <View style={styles.dropdownContainer}>
+    <TouchableOpacity
+      style={styles.dropdown}
+      onPress={() => setDropdownVisible(!dropdownVisible)}
+    >
+      <Text style={selectedCategory ? styles.dropdownText : [styles.dropdownText, styles.placeholderText]}>
+        {selectedCategory ? selectedCategory.label : 'Select a Category'}
+      </Text>
+    </TouchableOpacity>
+
+    {dropdownVisible && (
+      <View style={styles.dropdownList}>
+        <ScrollView nestedScrollEnabled={true}>
+          {categories.map((category, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.dropdownItem}
+              onPress={() => {
+                setSelectedCategory(category);
+                setSelectedIcon(category.iconIndex); 
+                setDropdownVisible(false);
+              }}
+            >
+              <Text style={styles.dropdownItemText}>{category.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    )}
+  </View> */}
+  
+  <View style={styles.dropdownContainer}>
+  <TouchableOpacity
+    style={styles.dropdown}
+    onPress={() => setCategoryModalVisible(true)} // Open the modal instead of toggling dropdown visibility
+  >
+    <Text style={selectedCategory ? styles.dropdownText : [styles.dropdownText, styles.placeholderText]}>
+      {selectedCategory ? selectedCategory.label : 'Select a Category'}
+    </Text>
+  </TouchableOpacity>
+</View>
+
+<Modal
+  visible={categoryModalVisible}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setCategoryModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Select a Category</Text>
+      <FlatList
+        data={categories}
+        keyExtractor={(item, index) => index.toString()}
+        renderItem={({ item }) => (
+          <TouchableOpacity
+            style={styles.dropdownItem}
+            onPress={() => {
+              setSelectedCategory(item); // Set the selected category
+              setSelectedIcon(item.iconIndex); // Automatically assign the corresponding icon
+              setCategoryModalVisible(false); // Close the modal
+            }}
+          >
+            <Text style={styles.dropdownItemText}>{item.label}</Text>
+          </TouchableOpacity>
+        )}
+      />
+      <TouchableOpacity style={styles.closeButton} onPress={() => setCategoryModalVisible(false)}>
+        <Text style={styles.closeButtonText}>Close</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
+
+  <View style={styles.buttonRow}>
+
+  <TouchableOpacity style={styles.saveButton} onPress={() => {
+  handleSaveLocation();
+  setSaveLocationModalVisible(true);  // Hide the modal after saving
+}}>
+  <Text style={styles.saveButtonText}>Save Location</Text>
+</TouchableOpacity>
+
+
+
+
+
+<TouchableOpacity style={styles.deleteOptionsButton} onPress={() => { setShowForm(false); setDeleteModalVisible(true); }}>
+<Text style={styles.deleteOptionsButtonText}>Delete Location</Text>
+</TouchableOpacity>
+
+
+</View>
+
+<Modal
+  visible={daySelectionModalVisible}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setDaySelectionModalVisible(false)}
+>
+  <View style={styles.modalOverlay}>
+    <View style={styles.modalContent}>
+      <Text style={styles.modalTitle}>Select Allowed Days</Text>
+
+      {/* "All Days" Option */}
+      <TouchableOpacity
+        style={allowedDays.length === 7 ? styles.selectedDayButton : styles.dayButton}
+        onPress={() => {
+          setAllowedDays((prevDays) =>
+            prevDays.length === 7
+              ? [] // Clear all days if all are selected
+              : ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'] // Select all days
+          );
+        }}
+      >
+        <Text style={styles.dayButtonText}>All Days</Text>
+      </TouchableOpacity>
+
+      {/* Individual Day Options */}
+      {['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'].map((day, index) => (
+        <TouchableOpacity
+          key={index}
+          style={allowedDays.includes(day) ? styles.selectedDayButton : styles.dayButton}
+          onPress={() => {
+            setAllowedDays((prevDays) =>
+              prevDays.includes(day)
+                ? prevDays.filter((d) => d !== day) // Remove the day if already selected
+                : [...prevDays, day] // Add the day if not selected
+            );
+          }}
+        >
+          <Text style={styles.dayButtonText}>{day}</Text>
+        </TouchableOpacity>
+      ))}
+
+      <TouchableOpacity
+        style={styles.closeButton}
+        onPress={() => setDaySelectionModalVisible(false)}
+      >
+        <Text style={styles.closeButtonText}>Close</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+
+
+
+
+
+
+
+  {/* <TouchableOpacity style={styles.closeButton} onPress={() => setShowForm(false)}>
+    <Text style={styles.closeButtonText}>Close</Text>
+  </TouchableOpacity> */}
+
+  
+</ScrollView>
+</View>
+</View>
+
+
+
+    {/* <Modal
+visible={showForm}
+transparent={true}
+animationType="slide"
+onRequestClose={() => setShowForm(false)}
+>
+<View style={styles.modalOverlay}>
+<View style={styles.modalContent}>
+
+<ScrollView contentContainerStyle={styles.modalScrollContent}>
+  
+
+<Text style={styles.modalTitle}>Add Location Details</Text>
+
+
+<View style={styles.radioButtonContainer}>
+<TouchableOpacity
+style={styles.radioButton}
+onPress={() => {
+setSelectedMode('none');
+setMode('none');
+setPopupVisible(false);
+setIsDrawing(false);
+}}
+>
+<View style={[
+styles.radioCircle,
+selectedMode === 'none' && styles.selectedRadioCircle
+]}/>
+<Text style={styles.radioText}>None</Text>
+</TouchableOpacity>
+<TouchableOpacity
+  style={styles.radioButton}
+  onPress={() => {
+    setSelectedMode('marker');
+    setMode('marker');
+    setPopupVisible(false);
+    setIsDrawing(false);
+    setModalVisibleIcon(true); // Ensure this line is present to show the modal
   }}
 >
-  
-  {selectedLocation && (
-    <Marker coordinate={selectedLocation} />
-  )}
-{filteredPlaces.map((place, index) => {
-  // Handle polyline (line) rendering
-  if (place.start && place.end) {
-    return (
-      <Polyline
-        key={index}
-        coordinates={[place.start, place.end]}
-        strokeColor={
-          place.lineStyle === 'dashedRed' || place.lineStyle === 'straightRed' ? 'red' : 'green'
-        }
-        strokeWidth={6}
-        lineDashPattern={
-          place.lineStyle === 'dashedRed' || place.lineStyle === 'dashedGreen' ? [5, 10] : null
-        }
-        onPress={() => showCustomAlert('Line', place.name)}
-      />
-    );
-  }
-  
-  // Handle marker (point) rendering
-  else if (place.location) {
-    return (
-      <Marker
-        key={index}
-        coordinate={place.location}
-        onPress={() => showCustomAlert('Drop', place.name)}
-      >
-        <Image source={icons[place.iconIndex]} style={styles.markerIcon} />
-      </Marker>
-    );
-  }
-  
-  // Handle polygon (area) rendering
-  else if (place.coordinates) {
-    return (
-      <Polygon
-        key={index}
-        coordinates={place.coordinates}
-        fillColor={`rgba(${place.color === 'green' ? '0,255,0,0.3' : '255,0,0,0.3'})`}
-        strokeColor={place.color}
-        strokeWidth={2}
-        onPress={() => showCustomAlert('Area', place.name)}
-      />
-    );
-  }
+  <View style={[
+    styles.radioCircle,
+    selectedMode === 'marker' && styles.selectedRadioCircle
+  ]}/>
+  <Text style={styles.radioText}>Drop</Text>
+</TouchableOpacity>
 
-  return null; // In case no matching condition is found
+<Modal
+  visible={modalVisibleIcon}
+  transparent={true}
+  animationType="slide"
+  onRequestClose={() => setModalVisibleIcon(false)}
+>
+  <View style={styles.modalContainer}>
+    <View style={styles.modalContent}>
+      <View style={styles.modalIcon}>
+        <Text style={styles.modalTitle}>Select an Icon</Text>
+        <FlatList
+          data={icons}
+          numColumns={3}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item, index }) => (
+            <TouchableOpacity onPress={() => { setSelectedIcon(index); setModalVisibleIcon(false); setShowForm(true); }}>
+              <Image source={item} style={styles.iconOption} />
+            </TouchableOpacity>
+          )}
+        />
+      </View>
+      <TouchableOpacity style={styles.closeButton} onPress={() => { setModalVisibleIcon(false); setShowForm(true); }}>
+        <Text style={styles.closeButtonText}>Close</Text>
+      </TouchableOpacity>
+    </View>
+  </View>
+</Modal>
+<TouchableOpacity
+style={styles.radioButton}
+onPress={() => {
+setSelectedMode('polyline');
+setMode('polyline');
+setLineStyleModalVisible(true);
+setIsDrawing(false);
+}}
+>
+<View style={[
+styles.radioCircle,
+selectedMode === 'polyline' && styles.selectedRadioCircle
+]}/>
+<Text style={styles.radioText}>Line</Text>
+</TouchableOpacity>
+
+<TouchableOpacity
+style={styles.radioButton}
+onPress={() => {
+setSelectedMode('area');  // Enable drawing mode for areas
+setMode('area');          // Set mode to 'area'
+setIsDrawing(true);       // Automatically enable drawing
+}}
+>
+<View style={[
+styles.radioCircle,
+selectedMode === 'area' && styles.selectedRadioCircle // Ensure the circle highlights when Area is selected
+]}/>
+<Text style={styles.radioText}>Area</Text>
+</TouchableOpacity>
+
+
+
+</View>
+
+
+
+
+
+
+{areaPopupVisible && (
+<Modal
+visible={areaPopupVisible}
+transparent={true}
+animationType="slide"
+onRequestClose={() => setAreaPopupVisible(false)}
+>
+<View style={styles.modalOverlay}>
+<View style={styles.modalContent}>
+  <Text style={styles.modalTitle}>Select Area Style</Text>
+  <View style={styles.lineStyleContainer}>
+    <TouchableOpacity
+      style={styles.radioButton}
+      onPress={() => {
+        setIsDrawing(true); // Ensure drawing mode is enabled
+        setDrawColor('green'); // Set the drawing color to green
+      }}
+    >
+      <View style={[
+        styles.radioCircle,
+        isDrawing && drawColor === 'green' && styles.selectedRadioCircle
+      ]}/>
+      <Text style={styles.radioText}>Draw Green</Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      style={styles.radioButton}
+      onPress={() => {
+        setIsDrawing(true); // Ensure drawing mode is enabled
+        setDrawColor('red'); // Set the drawing color to red
+      }}
+    >
+      <View style={[
+        styles.radioCircle,
+        isDrawing && drawColor === 'red' && styles.selectedRadioCircle
+      ]}/>
+      <Text style={styles.radioText}>Draw Red</Text>
+    </TouchableOpacity>
+  </View>
+
+  <TouchableOpacity
+    style={styles.closeButton}
+    onPress={() => setAreaPopupVisible(false)}
+  >
+    <Text style={styles.closeButtonText}>Close</Text>
+  </TouchableOpacity>
+</View>
+</View>
+</Modal>
+)}
+
+
+
+
+
+
+
+<View style={styles.containerSearch}>
+{selectedMode !== 'polyline' && selectedMode !== 'area' && (
+<TextInput
+style={styles.placeContainer}
+placeholder="Enter drop name"
+placeholderTextColor="#AAAAAA"
+value={placeName}
+onChangeText={setPlaceName}
+/>
+)}
+{selectedMode === 'polyline' && (
+<TextInput
+style={styles.placeContainer}
+placeholder="Enter line name"
+placeholderTextColor="#AAAAAA"
+value={polylineName}
+onChangeText={setPolylineName}
+/>
+)}
+{selectedMode === 'area' && (
+<TextInput
+style={styles.placeContainer}
+placeholder="Enter area name"
+placeholderTextColor="#AAAAAA"
+value={polygonName}
+onChangeText={setPolygonName}
+/>
+)}
+</View>
+
+
+  
+  <View style={styles.dropdownContainer}>
+    <TouchableOpacity
+      style={styles.dropdown}
+      onPress={() => setCategoryModalVisible(true)}
+    >
+      <Text style={selectedCategory ? styles.dropdownText : [styles.dropdownText, styles.placeholderText]}>
+        {selectedCategory ? selectedCategory.label : 'Select a Category'}
+      </Text>
+    </TouchableOpacity>
+
+    {dropdownVisible && (
+      <View style={styles.dropdownList}>
+        <ScrollView nestedScrollEnabled={true}>
+          {categories.map((category, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.dropdownItem}
+              onPress={() => {
+                setSelectedCategory(category);
+                setDropdownVisible(false);
+              }}
+            >
+              <Text style={styles.dropdownItemText}>{category.label}</Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+      </View>
+    )}
+  </View>
+  
+  <Modal
+    visible={categoryModalVisible}
+    transparent={true}
+    animationType="slide"
+    onRequestClose={() => setCategoryModalVisible(false)}
+  >
+    <View style={styles.modalOverlay}>
+      <View style={styles.modalContent}>
+        <Text style={styles.modalTitle}>Select a Category</Text>
+        <FlatList
+          data={categories}
+          keyExtractor={(item, index) => index.toString()}
+          renderItem={({ item }) => (
+            <TouchableOpacity
+              style={styles.dropdownItem}
+              onPress={() => {
+                setSelectedCategory(item);
+                setCategoryModalVisible(false);
+              }}
+            >
+              <Text style={styles.dropdownItemText}>{item.label}</Text>
+            </TouchableOpacity>
+          )}
+        />
+        <TouchableOpacity style={styles.closeButton} onPress={() => setCategoryModalVisible(false)}>
+          <Text style={styles.closeButtonText}>Close</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </Modal>
+
+  <View style={styles.buttonRow}>
+
+
+
+
+<TouchableOpacity style={styles.deleteOptionsButton} onPress={() => { setShowForm(false); setDeleteModalVisible(true); }}>
+<Text style={styles.deleteOptionsButtonText}>Delete Location</Text>
+</TouchableOpacity>
+</View>
+
+
+  <TouchableOpacity style={styles.closeButton} onPress={() => setShowForm(false)}>
+    <Text style={styles.closeButtonText}>Close</Text>
+  </TouchableOpacity>
+
+  
+</ScrollView>
+</View>
+</View>
+</Modal> */}
+
+
+
+<Modal
+visible={deleteModalVisible}
+transparent={true}
+animationType="slide"
+onRequestClose={() => setDeleteModalVisible(false)}
+>
+<View style={styles.modalContainer}>
+<View style={styles.modalContent}>
+<Text style={styles.modalTitle}>Delete Saved Places</Text>
+<FlatList
+  data={savedPlaces}
+  keyExtractor={(item, index) => index.toString()}
+  renderItem={({ item, index }) => (
+    <View style={styles.savedPlaceItem}>
+      <Text style={styles.Place}>
+        {item.name || 
+          (item.start && item.end 
+            ? `${item.start.latitude.toFixed(2)}, ${item.start.longitude.toFixed(2)} to ${item.end.latitude.toFixed(2)}, ${item.end.longitude.toFixed(2)}`
+            : '')
+        }
+      </Text>
+      {item.dateAdded && (
+        <Text style={styles.dateText}>Added on: {item.dateAdded}</Text> // Display the dateAdded field
+      )}
+      <TouchableOpacity onPress={() => handleDeletePlace(index)} style={styles.deleteButton}>
+        <Text style={styles.deleteButtonText}>Delete</Text>
+      </TouchableOpacity>
+    </View>
+  )}
+/>
+
+<TouchableOpacity style={styles.closeButton} onPress={() => { setDeleteModalVisible(false); setShowForm(true); }}>
+  <Text style={styles.closeButtonText}>Close</Text>
+</TouchableOpacity>
+</View>
+</View>
+</Modal>
+
+
+
+<Modal
+visible={filterModalVisible}
+transparent={true}
+animationType="slide"
+onRequestClose={() => setFilterModalVisible(false)}
+>
+<View style={styles.modalContainer}>
+<View style={styles.modalContent}>
+<Text style={styles.modalTitle}>Filters</Text>
+<View style={styles.filterAllContainer}>
+  <View style={styles.filterItem}>
+    <TouchableOpacity
+      style={styles.customCheckBox}
+      onPress={() => handleToggleFilter('all')}
+    >
+      {filters.all && <View style={styles.checkedBox} />}
+    </TouchableOpacity>
+    <Text style={styles.filterText}>ALL</Text>
+  </View>
+</View>
+<View style={styles.filterGroup}>
+  {Object.keys(filters).filter(filter => filter !== 'all').map((filter, index) => (
+    <View key={filter} style={styles.filterItem}>
+      <TouchableOpacity
+        style={styles.customCheckBox}
+        onPress={() => handleToggleFilter(filter)}
+      >
+        {filters[filter] && <View style={styles.checkedBox} />}
+      </TouchableOpacity>
+      <Text style={styles.filterText}>
+        {filter === 'mobilityHub' ? 'MOBILITY HUB' :
+        filter === 'freeParking' ? 'Free Parking' :
+        filter === 'fnbZones' ? 'F&B Zones' :
+        filter === 'taxiStands' ? 'Taxi Stands' :
+        filter === 'dropOffPickup' ? 'Drop off/ Pickup points' :
+        filter === 'Violation' ? 'Violation' :
+        'EV Zones'}
+      </Text>
+    </View>
+  )).reduce((acc, curr, index) => {
+    if (index % 2 === 0) acc.push([curr]);
+    else acc[acc.length - 1].push(curr);
+    return acc;
+  }, []).map((row, index) => (
+    <View key={index} style={styles.filterRow}>
+      {row}
+    </View>
+  ))}
+</View>
+<TouchableOpacity style={styles.closeButton} onPress={() => setFilterModalVisible(false)}>
+  <Text style={styles.closeButtonText}>Close</Text>
+</TouchableOpacity>
+</View>
+</View>
+</Modal>
+
+
+{/* <Modal
+visible={saveLocationModalVisible}
+transparent={true}
+animationType="slide"
+onRequestClose={() => setSaveLocationModalVisible(false)}
+>
+<View style={styles.modalOverlay}>
+<View style={styles.modalContent}>
+<Text style={styles.modalTitle}>Save Location</Text>
+<TouchableOpacity style={styles.saveButton} onPress={() => {
+  handleSaveLocation();
+  setSaveLocationModalVisible(false);  // Hide the modal after saving
+}}>
+  <Text style={styles.saveButtonText}>Save Location</Text>
+</TouchableOpacity>
+<TouchableOpacity style={styles.closeButton} onPress={() => setSaveLocationModalVisible(false)}>
+  <Text style={styles.closeButtonText}>Close</Text>
+</TouchableOpacity>
+</View>
+</View>
+</Modal> */}
+<View style={styles.mapContainer}>
+
+        
+<MapView
+key={JSON.stringify(filteredPlaces)}
+style={styles.map}
+region={region}
+onRegionChangeComplete={setRegion}
+onPress={(event) => {
+if (isDrawing) {
+handleDrawStart(event);
+} else {
+handleSelectLocation(event);
+}
+}}
+onLongPress={handleDrawEnd}
+showsCompass={true}
+showsPointsOfInterest={true}
+showsBuildings={true}
+showsIndoors={true}
+showsUserLocation={true}
+followsUserLocation={true}
+showsMyLocationButton={true}
+showsScale={true}
+showsZoomControls={true}
+onUserLocationChange={(event) => {
+const { coordinate } = event.nativeEvent;
+if (coordinate) {
+const { latitude, longitude } = coordinate;
+setRegion({
+latitude,
+longitude,
+latitudeDelta: 0.0922,
+longitudeDelta: 0.0421,
+});
+}
+}}
+>
+
+{selectedLocation && (
+<Marker coordinate={selectedLocation} />
+)}
+{filteredPlaces.map((place, index) => {
+// Handle polyline (line) rendering
+if (place.start && place.end) {
+return (
+<Polyline
+key={index}
+coordinates={[place.start, place.end]}
+strokeColor={
+place.lineStyle === 'dashedRed' || place.lineStyle === 'straightRed' ? 'red' : 'green'
+}
+strokeWidth={6}
+lineDashPattern={
+place.lineStyle === 'dashedRed' || place.lineStyle === 'dashedGreen' ? [5, 10] : null
+}
+onPress={() => showCustomAlert('Line', polylineName || 'Temporary Line', place.dateAdded)}
+/>
+);
+}
+
+// Handle marker (point) rendering
+else if (place.location) {
+return (
+<Marker
+key={index}
+coordinate={place.location}
+onPress={() => showCustomAlert('Drop', place.name, place.dateAdded)}
+>
+<Image source={icons[place.iconIndex]} style={styles.markerIcon} />
+</Marker>
+);
+}
+
+// Handle polygon (area) rendering
+else if (place.coordinates) {
+return (
+<Polygon
+key={index}
+coordinates={place.coordinates}
+fillColor={`rgba(${place.color === 'green' ? '0,255,0,0.3' : '255,0,0,0.3'})`}
+strokeColor={place.color}
+strokeWidth={2}
+onPress={() => showCustomAlert('Area', polygon.name, polygon.dateAdded)}
+/>
+);
+}
+
+return null; // In case no matching condition is found
 })}
 
 
@@ -855,565 +1696,80 @@ const HomeScreen = ({ navigation}) => {
 
 
 {startPoint && endPoint && (
-  <Polyline
-    coordinates={[startPoint, endPoint]}
-    strokeColor={lineStyle === 'straightRed' ? 'red' : 'green'} // Red for straightRed, Green for straightGreen
-    strokeWidth={6} // Line width
-    lineDashPattern={lineStyle === 'dashedRed' || lineStyle === 'dashedGreen' ? [5, 10] : []} // Empty array for straight lines
-    onPress={() => showCustomAlert('Line', polylineName || 'Temporary Line')}
-  >
-    <Callout>
-      <Text>{polylineName || 'Temporary Line'}</Text>
-    </Callout>
-  </Polyline>
+<Polyline
+coordinates={[startPoint, endPoint]}
+strokeColor={lineStyle === 'straightRed' ? 'red' : 'green'} // Red for straightRed, Green for straightGreen
+strokeWidth={6} // Line width
+lineDashPattern={lineStyle === 'dashedRed' || lineStyle === 'dashedGreen' ? [5, 10] : []} // Empty array for straight lines
+onPress={() => showCustomAlert('Line', polylineName || 'Temporary Line')}
+>
+<Callout>
+<Text>{polylineName || 'Temporary Line'}</Text>
+</Callout>
+</Polyline>
 )}
 
 
 {path.length > 0 && (
-  <Polyline
-    coordinates={path}
-    strokeColor={drawColor}
-    strokeWidth={2}
-  >
-    <Callout>
-      <Text>{polygonName || 'Drawing Path'}</Text>
-    </Callout>
-  </Polyline>
+<Polyline
+coordinates={path}
+strokeColor={drawColor}
+strokeWidth={2}
+>
+<Callout>
+<Text>{polygonName || 'Drawing Path'}</Text>
+</Callout>
+</Polyline>
 )}
 
 {drawnPolygons.length > 0 && drawnPolygons.map((polygon, index) => (
-  <Polygon
-    key={index}
-    coordinates={polygon.coordinates}
-    fillColor={`rgba(${polygon.color === 'green' ? '0,255,0,0.3' : '255,0,0,0.3'})`}
-    strokeColor={polygon.color}
-    strokeWidth={2}
-    onPress={() => showCustomAlert('Area', polygon.name)}  // Updated line
-  >
-    <Callout>
-      <Text>{polygon.name}</Text>
-    </Callout>
-  </Polygon>
+<Polygon
+key={index}
+coordinates={polygon.coordinates}
+fillColor={`rgba(${polygon.color === 'green' ? '0,255,0,0.3' : '255,0,0,0.3'})`}
+strokeColor={polygon.color}
+strokeWidth={2}
+onPress={() => showCustomAlert('Area', polygon.name)}  // Updated line
+>
+<Callout>
+<Text>{polygon.name}</Text>
+</Callout>
+</Polygon>
 ))}
 
 
 
 </MapView>
 {showLocationCount && filteredPlaces.length > 0 && (
-  <View style={styles.locationCountContainer}>
-    <Text style={styles.locationCountText}>
-      {filteredPlaces.length} 
-    </Text>
-  </View>
+<View style={styles.locationCountContainer}>
+<Text style={styles.locationCountText}>
+{filteredPlaces.length} 
+</Text>
+</View>
 )}
 
 
 <Modal
-  visible={alertVisible}
-  transparent={true}
-  animationType="fade"
-  onRequestClose={() => setAlertVisible(false)}
+visible={alertVisible}
+transparent={true}
+animationType="fade"
+onRequestClose={() => setAlertVisible(false)}
 >
-  <View style={styles.modalOverlay}>
-    <View style={styles.customAlertContainer}>
-      <Text style={styles.customAlertTitle}>{alertTitle}</Text>
-      <Text style={styles.customAlertMessage}>{alertMessage}</Text>
-      <TouchableOpacity style={styles.closeButton} onPress={() => setAlertVisible(false)}>
-        <Text style={styles.closeButtonText}>OK</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
-
-          </View>
-
-
-          <Modal
-  visible={showForm}
-  transparent={true}
-  animationType="slide"
-  onRequestClose={() => setShowForm(false)}
->
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalContent}>
-      
-      <ScrollView contentContainerStyle={styles.modalScrollContent}>
-        
-
-      <Text style={styles.modalTitle}>Add Location Details</Text>
-
-
-      <View style={styles.radioButtonContainer}>
-      <TouchableOpacity
-    style={styles.radioButton}
-    onPress={() => {
-      setSelectedMode('none');
-      setMode('none');
-      setPopupVisible(false);
-      setIsDrawing(false);
-    }}
-  >
-    <View style={[
-      styles.radioCircle,
-      selectedMode === 'none' && styles.selectedRadioCircle
-    ]}/>
-    <Text style={styles.radioText}>None</Text>
-  </TouchableOpacity>
-  <TouchableOpacity
-        style={styles.radioButton}
-        onPress={() => {
-          setSelectedMode('marker');
-          setMode('marker');
-          setPopupVisible(false);
-          setIsDrawing(false);
-          setModalVisibleIcon(true); // Ensure this line is present to show the modal
-        }}
-      >
-        <View style={[
-          styles.radioCircle,
-          selectedMode === 'marker' && styles.selectedRadioCircle
-        ]}/>
-        <Text style={styles.radioText}>Drop</Text>
-      </TouchableOpacity>
-
-      <Modal
-        visible={modalVisibleIcon}
-        transparent={true}
-        animationType="slide"
-        onRequestClose={() => setModalVisibleIcon(false)}
-      >
-        <View style={styles.modalContainer}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalIcon}>
-              <Text style={styles.modalTitle}>Select an Icon</Text>
-              <FlatList
-                data={icons}
-                numColumns={3}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item, index }) => (
-                  <TouchableOpacity onPress={() => { setSelectedIcon(index); setModalVisibleIcon(false); setShowForm(true); }}>
-                    <Image source={item} style={styles.iconOption} />
-                  </TouchableOpacity>
-                )}
-              />
-            </View>
-            <TouchableOpacity style={styles.closeButton} onPress={() => { setModalVisibleIcon(false); setShowForm(true); }}>
-              <Text style={styles.closeButtonText}>Close</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      </Modal>
-  <TouchableOpacity
-  style={styles.radioButton}
-  onPress={() => {
-    setSelectedMode('polyline');
-    setMode('polyline');
-    setLineStyleModalVisible(true);
-    setIsDrawing(false);
-  }}
->
-  <View style={[
-    styles.radioCircle,
-    selectedMode === 'polyline' && styles.selectedRadioCircle
-  ]}/>
-  <Text style={styles.radioText}>Line</Text>
+<View style={styles.modalOverlay}>
+<View style={styles.customAlertContainer}>
+<Text style={styles.customAlertTitle}>{alertTitle}</Text>
+<Text style={styles.customAlertMessage}>{alertMessage}</Text>
+<TouchableOpacity style={styles.closeButton} onPress={() => setAlertVisible(false)}>
+<Text style={styles.closeButtonText}>OK</Text>
 </TouchableOpacity>
-
-<TouchableOpacity
-  style={styles.radioButton}
-  onPress={() => {
-    setSelectedMode('area');  // Enable drawing mode for areas
-    setMode('area');          // Set mode to 'area'
-    setIsDrawing(true);       // Automatically enable drawing
-  }}
->
-  <View style={[
-    styles.radioCircle,
-    selectedMode === 'area' && styles.selectedRadioCircle // Ensure the circle highlights when Area is selected
-  ]}/>
-  <Text style={styles.radioText}>Area</Text>
-</TouchableOpacity>
-
-
-
 </View>
-
-        {/* <Modal
-  visible={lineStyleModalVisible}
-  transparent={true}
-  animationType="slide"
-  onRequestClose={() => setLineStyleModalVisible(false)}
->
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalContent}>
-    <Text style={styles.modalTitle}>Select Line Style</Text>
-
-    <View style={styles.lineStyleContainer}>
-      
-  <TouchableOpacity
-    style={styles.radioButton2}
-    onPress={() => {
-      setLineStyle('dashedRed');
-      setLineStyleModalVisible(false);  // Hide the modal after selection
-      handleSaveLocation();  // Save immediately
-    }}
-  >
-    <View style={[
-      styles.radioCircle,
-      lineStyle === 'dashedRed' && styles.selectedRadioCircle
-    ]}/>
-    <Text style={styles.radioText}>Dashed Red</Text>
-  </TouchableOpacity>
-
-  <TouchableOpacity
-    style={styles.radioButton2}
-    onPress={() => {
-      setLineStyle('dashedGreen');
-      setLineStyleModalVisible(false);
-      handleSaveLocation();
-    }}
-  >
-    <View style={[
-      styles.radioCircle,
-      lineStyle === 'dashedGreen' && styles.selectedRadioCircle
-    ]}/>
-    <Text style={styles.radioText}>Dashed Green</Text>
-  </TouchableOpacity>
-
-  <TouchableOpacity
-    style={styles.radioButton2}
-    onPress={() => {
-      setLineStyle('straightRed');
-      setLineStyleModalVisible(false);
-      handleSaveLocation();
-    }}
-  >
-    <View style={[
-      styles.radioCircle,
-      lineStyle === 'straightRed' && styles.selectedRadioCircle
-    ]}/>
-    <Text style={styles.radioText}>Straight Red</Text>
-  </TouchableOpacity>
-
-  <TouchableOpacity
-    style={styles.radioButton2}
-    onPress={() => {
-      setLineStyle('straightGreen');
-      setLineStyleModalVisible(false);
-      handleSaveLocation();
-    }}
-  >
-    <View style={[
-      styles.radioCircle,
-      lineStyle === 'straightGreen' && styles.selectedRadioCircle
-    ]}/>
-    <Text style={styles.radioText}>Straight Green</Text>
-  </TouchableOpacity>
 </View>
-
-
-      <TouchableOpacity
-        style={styles.closeButton}
-        onPress={() => setLineStyleModalVisible(false)}
-      >
-        <Text style={styles.closeButtonText}>Close</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal> */}
-
-
-
-
-{areaPopupVisible && (
-  <Modal
-    visible={areaPopupVisible}
-    transparent={true}
-    animationType="slide"
-    onRequestClose={() => setAreaPopupVisible(false)}
-  >
-    <View style={styles.modalOverlay}>
-      <View style={styles.modalContent}>
-        <Text style={styles.modalTitle}>Select Area Style</Text>
-        <View style={styles.lineStyleContainer}>
-          <TouchableOpacity
-            style={styles.radioButton}
-            onPress={() => {
-              setIsDrawing(true); // Ensure drawing mode is enabled
-              setDrawColor('green'); // Set the drawing color to green
-            }}
-          >
-            <View style={[
-              styles.radioCircle,
-              isDrawing && drawColor === 'green' && styles.selectedRadioCircle
-            ]}/>
-            <Text style={styles.radioText}>Draw Green</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.radioButton}
-            onPress={() => {
-              setIsDrawing(true); // Ensure drawing mode is enabled
-              setDrawColor('red'); // Set the drawing color to red
-            }}
-          >
-            <View style={[
-              styles.radioCircle,
-              isDrawing && drawColor === 'red' && styles.selectedRadioCircle
-            ]}/>
-            <Text style={styles.radioText}>Draw Red</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TouchableOpacity
-          style={styles.closeButton}
-          onPress={() => setAreaPopupVisible(false)}
-        >
-          <Text style={styles.closeButtonText}>Close</Text>
-        </TouchableOpacity>
-      </View>
-    </View>
-  </Modal>
-)}
-
-
-
-
-      
-
-
-<View style={styles.containerSearch}>
-  {selectedMode !== 'polyline' && selectedMode !== 'area' && (
-    <TextInput
-      style={styles.placeContainer}
-      placeholder="Enter drop name"
-      placeholderTextColor="#AAAAAA"
-      value={placeName}
-      onChangeText={setPlaceName}
-    />
-  )}
-  {selectedMode === 'polyline' && (
-    <TextInput
-      style={styles.placeContainer}
-      placeholder="Enter line name"
-      placeholderTextColor="#AAAAAA"
-      value={polylineName}
-      onChangeText={setPolylineName}
-    />
-  )}
-  {selectedMode === 'area' && (
-    <TextInput
-      style={styles.placeContainer}
-      placeholder="Enter area name"
-      placeholderTextColor="#AAAAAA"
-      value={polygonName}
-      onChangeText={setPolygonName}
-    />
-  )}
-</View>
-
-
-        
-        <View style={styles.dropdownContainer}>
-          <TouchableOpacity
-            style={styles.dropdown}
-            onPress={() => setCategoryModalVisible(true)}
-          >
-            <Text style={selectedCategory ? styles.dropdownText : [styles.dropdownText, styles.placeholderText]}>
-              {selectedCategory ? selectedCategory.label : 'Select a Category'}
-            </Text>
-          </TouchableOpacity>
-
-          {dropdownVisible && (
-            <View style={styles.dropdownList}>
-              <ScrollView nestedScrollEnabled={true}>
-                {categories.map((category, index) => (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setSelectedCategory(category);
-                      setDropdownVisible(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownItemText}>{category.label}</Text>
-                  </TouchableOpacity>
-                ))}
-              </ScrollView>
-            </View>
-          )}
-        </View>
-        
-        <Modal
-          visible={categoryModalVisible}
-          transparent={true}
-          animationType="slide"
-          onRequestClose={() => setCategoryModalVisible(false)}
-        >
-          <View style={styles.modalOverlay}>
-            <View style={styles.modalContent}>
-              <Text style={styles.modalTitle}>Select a Category</Text>
-              <FlatList
-                data={categories}
-                keyExtractor={(item, index) => index.toString()}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.dropdownItem}
-                    onPress={() => {
-                      setSelectedCategory(item);
-                      setCategoryModalVisible(false);
-                    }}
-                  >
-                    <Text style={styles.dropdownItemText}>{item.label}</Text>
-                  </TouchableOpacity>
-                )}
-              />
-              <TouchableOpacity style={styles.closeButton} onPress={() => setCategoryModalVisible(false)}>
-                <Text style={styles.closeButtonText}>Close</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        </Modal>
-
-        <View style={styles.buttonRow}>
-
-
-  {/* <TouchableOpacity style={styles.saveButton} onPress={handleSaveLocation}>
-    <Text style={styles.saveButtonText}>Save Location</Text>
-  </TouchableOpacity> */}
-
-  <TouchableOpacity style={styles.deleteOptionsButton} onPress={() => { setShowForm(false); setDeleteModalVisible(true); }}>
-    <Text style={styles.deleteOptionsButtonText}>Delete Location</Text>
-  </TouchableOpacity>
-</View>
-
-
-        <TouchableOpacity style={styles.closeButton} onPress={() => setShowForm(false)}>
-          <Text style={styles.closeButtonText}>Close</Text>
-        </TouchableOpacity>
-
-        
-      </ScrollView>
-    </View>
-  </View>
 </Modal>
 
-
-
-<Modal
-  visible={deleteModalVisible}
-  transparent={true}
-  animationType="slide"
-  onRequestClose={() => setDeleteModalVisible(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <Text style={styles.modalTitle}>Delete Saved Places</Text>
-      <FlatList
-        data={savedPlaces}
-        keyExtractor={(item, index) => index.toString()}
-        renderItem={({ item, index }) => (
-          <View style={styles.savedPlaceItem}>
-            <Text style={styles.Place}>{item.name || (item.start && item.end ? `${item.start.latitude.toFixed(2)}, ${item.start.longitude.toFixed(2)} to ${item.end.latitude.toFixed(2)}, ${item.end.longitude.toFixed(2)}` : '')}</Text>
-            <TouchableOpacity onPress={() => handleDeletePlace(index)} style={styles.deleteButton}>
-              <Text style={styles.deleteButtonText}>Delete</Text>
-            </TouchableOpacity>
-          </View>
-        )}
-      />
-      <TouchableOpacity style={styles.closeButton} onPress={() => { setDeleteModalVisible(false); setShowForm(true); }}>
-        <Text style={styles.closeButtonText}>Close</Text>
-      </TouchableOpacity>
-    </View>
+</View>
   </View>
-</Modal>
 
 
-
-<Modal
-  visible={filterModalVisible}
-  transparent={true}
-  animationType="slide"
-  onRequestClose={() => setFilterModalVisible(false)}
->
-  <View style={styles.modalContainer}>
-    <View style={styles.modalContent}>
-      <Text style={styles.modalTitle}>Filters</Text>
-      <View style={styles.filterAllContainer}>
-        <View style={styles.filterItem}>
-          <TouchableOpacity
-            style={styles.customCheckBox}
-            onPress={() => handleToggleFilter('all')}
-          >
-            {filters.all && <View style={styles.checkedBox} />}
-          </TouchableOpacity>
-          <Text style={styles.filterText}>ALL</Text>
-        </View>
-      </View>
-      <View style={styles.filterGroup}>
-        {Object.keys(filters).filter(filter => filter !== 'all').map((filter, index) => (
-          <View key={filter} style={styles.filterItem}>
-            <TouchableOpacity
-              style={styles.customCheckBox}
-              onPress={() => handleToggleFilter(filter)}
-            >
-              {filters[filter] && <View style={styles.checkedBox} />}
-            </TouchableOpacity>
-            <Text style={styles.filterText}>
-              {filter === 'mobilityHub' ? 'MOBILITY HUB' :
-              filter === 'freeParking' ? 'Free Parking' :
-              filter === 'fnbZones' ? 'F&B Zones' :
-              filter === 'taxiStands' ? 'Taxi Stands' :
-              filter === 'dropOffPickup' ? 'Drop off/ Pickup points' :
-              filter === 'Violation' ? 'Violation' :
-              'EV Zones'}
-            </Text>
-          </View>
-        )).reduce((acc, curr, index) => {
-          if (index % 2 === 0) acc.push([curr]);
-          else acc[acc.length - 1].push(curr);
-          return acc;
-        }, []).map((row, index) => (
-          <View key={index} style={styles.filterRow}>
-            {row}
-          </View>
-        ))}
-      </View>
-      <TouchableOpacity style={styles.closeButton} onPress={() => setFilterModalVisible(false)}>
-        <Text style={styles.closeButtonText}>Close</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
-
-
-<Modal
-  visible={saveLocationModalVisible}
-  transparent={true}
-  animationType="slide"
-  onRequestClose={() => setSaveLocationModalVisible(false)}
->
-  <View style={styles.modalOverlay}>
-    <View style={styles.modalContent}>
-      <Text style={styles.modalTitle}>Save Location</Text>
-      <TouchableOpacity style={styles.saveButton} onPress={() => {
-        handleSaveLocation();
-        setSaveLocationModalVisible(false);  // Hide the modal after saving
-      }}>
-        <Text style={styles.saveButtonText}>Save Location</Text>
-      </TouchableOpacity>
-      <TouchableOpacity style={styles.closeButton} onPress={() => setSaveLocationModalVisible(false)}>
-        <Text style={styles.closeButtonText}>Close</Text>
-      </TouchableOpacity>
-    </View>
-  </View>
-</Modal>
-
-        </View>
-      </ScrollView>
-      <View style={styles.tabBarContainer}>
-        {/* <TabBar /> */}
-      </View>
-    </View>
   );
 };
 
@@ -1543,7 +1899,7 @@ const styles = StyleSheet.create({
   buttonRow: {
     flexDirection: 'row',
     justifyContent: 'center',
-    marginVertical: hp('2%'),  // Adjust as needed
+      // Adjust as needed
     alignItems: 'center',      // Optional, for vertical alignment
     gap: hp('2%'), 
   },
@@ -1593,7 +1949,7 @@ const styles = StyleSheet.create({
     shadowRadius: 2,
     elevation: 1,
     marginBottom: hp('3%'),
-    width: wp('65%'), // Ensure consistent width
+    width: wp('80%'), // Ensure consistent width
     height: hp('6%'), // Ensure consistent height
     color: '#000',
 
@@ -1750,7 +2106,7 @@ switchButtonText: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    gap: wp("20%"),
+    // gap: wp("20%"),
     
   },
   deleteButton: {
@@ -1810,6 +2166,24 @@ switchButtonText: {
     textAlign: 'center',
     color: '#000',
     },
+    headerContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: hp('0%'),
+        paddingHorizontal: wp('0%'),
+        gap: wp('14%'),
+      },
+      backButton: {
+        marginRight: wp('3%'),
+        padding: wp('2%'),
+      },
+      backIcon: {
+        width: wp('5%'),
+        height: hp('3%'),
+        resizeMode: 'contain',
+      },
+
+      
   radioButtonContainer: {
     marginTop: wp('4%'),
     marginBottom: wp('4%'),
@@ -1817,6 +2191,10 @@ switchButtonText: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-around',
+  },
+  status: {
+marginStart: wp('4%'),
+    alignItems: 'flex-start',
   },
   radioButton2: {
     flexDirection: 'row',
@@ -1922,7 +2300,6 @@ switchButtonText: {
   dropdownContainer: {
     marginRight: wp('8%'),
     marginLeft: wp('8%'),
-    marginBottom: hp('2%'),
     position: 'relative',
     zIndex: 1000, // Ensure the dropdown container is above other elements
   },
@@ -1941,7 +2318,7 @@ switchButtonText: {
     shadowRadius: 2,
     elevation: 1,
     marginBottom: hp('3%'),
-    width: wp('65%'), // Ensure consistent width
+    width: wp('80%'), // Ensure consistent width
     height: hp('6%'), // Ensure consistent height
   },
   dropdownText: {
@@ -2023,8 +2400,53 @@ locationCountText: {
     color: '#ffffff',
     fontSize: wp('4.5%'),
   },
+  selectedDayButton: {
+    padding: 10,
+    backgroundColor: 'green',
+    marginVertical: 5,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  dayButton: {
+    padding: 10,
+    backgroundColor: 'gray',
+    marginVertical: 5,
+    borderRadius: 5,
+    alignItems: 'center',
+  },
+  dayButtonText: {
+    color: 'white',
+    fontSize: 16,
+  },
+  selectDaysButton: {
+    backgroundColor: '#007BFF',
+    paddingVertical: hp('2%'),
+    width: wp('30%'),
+    borderRadius: wp('3%'),
+    alignItems: 'center',
+    marginHorizontal: wp('1%'),
+  },
+  selectDaysButtonText: {
+    color: '#fff',
+    fontSize: wp('3%'),
+    fontWeight: 'bold',
+  },
+  selectedDaysText: {
+    color: '#000',
+    fontSize: wp('4%'),
+    textAlign: 'left',
+    
+  },
+  placeholderTextColor: {
+    color: '#AAAAAA', // Matches the placeholderTextColor of TextInput
+  },
+  dateText: {
+    fontSize: 10,
+    color: '#666',
+    marginTop: 5,
+  },
   
 });
 
 
-export default HomeScreen;
+export default ManageYourArea;

@@ -14,10 +14,11 @@ const AddSpotScreen: React.FC = () => {
   const [toTime, setToTime] = useState('');
   const [filteredPlaces, setFilteredPlaces] = useState([]);
   const [region, setRegion] = useState({
-    latitude: 31.9539,
-    longitude: 35.9106,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
+    latitude: 26.2172,
+    longitude: 50.1971,
+    latitudeDelta: 0.05,
+    longitudeDelta: 0.05,
+    
   });
   const [selectedLocation, setSelectedLocation] = useState(null);
   const [date, setDate] = useState('');
@@ -98,7 +99,7 @@ const AddSpotScreen: React.FC = () => {
   return (
     <ScrollView style={styles.container}>
       <View style={styles.logoContainer}>
-        <Image source={require('../Images/logo.png')} style={styles.logo} />
+        <Image source={require('../Images/logo1.png')} style={styles.logo} />
       </View>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButtonContainer}>
@@ -251,9 +252,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logo: {
-    width: wp('40%'),
+    width: wp('25%'),
     height: hp('25%'),
-    resizeMode: 'cover',
+    resizeMode: 'contain',
   },
   header: {
     flexDirection: 'row',
